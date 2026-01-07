@@ -1,6 +1,7 @@
 import streamlit as st
 from supabase import create_client, Client
 import os
+from PIL import Image
 
 # Configuración de la página
 st.set_page_config(
@@ -10,90 +11,105 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS personalizado con tu paleta de colores
+# CSS personalizado con fondo blanco y detalles en azul/rojo
 st.markdown("""
 <style>
-    /* Colores principales */
-    :root {
-        --primary-blue: #0C0C5C;
-        --accent-red: #C40012;
-        --light-gray: #F5F5F5;
-        --white: #FFFFFF;
-    }
-    
     /* Ocultar elementos de Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* Fondo general */
+    /* Fondo general blanco */
     .stApp {
-        background: linear-gradient(135deg, #0C0C5C 0%, #1a1a7a 100%);
+        background: #FFFFFF;
     }
     
-    /* Contenedor principal */
-    .main-container {
+    /* Header con barra azul */
+    .top-bar {
+        background: linear-gradient(90deg, #0C0C5C 0%, #1a1a7a 100%);
+        height: 8px;
+        width: 100%;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1000;
+    }
+    
+    .header-section {
         background: white;
-        border-radius: 20px;
-        padding: 40px;
-        margin: 20px auto;
-        max-width: 1400px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    }
-    
-    /* Header */
-    .header {
-        text-align: center;
-        padding: 30px 0;
-        border-bottom: 3px solid #0C0C5C;
+        padding: 30px 60px;
+        border-bottom: 1px solid #e0e0e0;
         margin-bottom: 40px;
     }
     
-    .header h1 {
+    .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        margin-bottom: 20px;
+    }
+    
+    .title-section h1 {
         color: #0C0C5C;
-        font-size: 2.8em;
+        font-size: 2.2em;
         font-weight: 700;
         margin: 0;
+        line-height: 1.2;
     }
     
-    .header p {
+    .title-section p {
         color: #666;
-        font-size: 1.2em;
-        margin-top: 10px;
+        font-size: 1.1em;
+        margin-top: 8px;
     }
     
-    /* Sección de login */
-    .login-box {
-        background: linear-gradient(135deg, #0C0C5C 0%, #1a1a7a 100%);
-        border-radius: 15px;
-        padding: 40px;
-        color: white;
-        box-shadow: 0 5px 20px rgba(12,12,92,0.3);
+    .red-accent {
+        color: #C40012;
+        font-weight: 600;
     }
     
-    .login-box h2 {
-        color: white;
+    /* Contenedor principal */
+    .main-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px 60px;
+    }
+    
+    /* Login box con azul */
+    .login-container {
+        background: white;
+        border: 2px solid #0C0C5C;
+        border-radius: 12px;
+        padding: 35px;
+        box-shadow: 0 4px 15px rgba(12,12,92,0.1);
+    }
+    
+    .login-container h2 {
+        color: #0C0C5C;
         margin-bottom: 25px;
-        font-size: 1.8em;
+        font-size: 1.6em;
+        border-bottom: 3px solid #C40012;
+        padding-bottom: 10px;
+        display: inline-block;
     }
     
     /* Botones */
     .stButton > button {
-        background-color: #C40012;
+        background-color: #0C0C5C;
         color: white;
         border: none;
         border-radius: 8px;
         padding: 12px 30px;
-        font-size: 1.1em;
+        font-size: 1.05em;
         font-weight: 600;
         width: 100%;
         transition: all 0.3s ease;
     }
     
     .stButton > button:hover {
-        background-color: #a00010;
+        background-color: #C40012;
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(196,0,18,0.4);
+        box-shadow: 0 5px 15px rgba(12,12,92,0.3);
     }
     
     /* Inputs */
@@ -106,13 +122,14 @@ st.markdown("""
     
     .stTextInput > div > div > input:focus {
         border-color: #0C0C5C;
-        box-shadow: 0 0 0 2px rgba(12,12,92,0.1);
+        box-shadow: 0 0 0 3px rgba(12,12,92,0.1);
     }
     
-    /* Cards de información */
+    /* Cards de información con borde azul sutil */
     .info-card {
-        background: #F5F5F5;
-        border-left: 5px solid #0C0C5C;
+        background: white;
+        border: 1px solid #e8e8e8;
+        border-left: 4px solid #0C0C5C;
         border-radius: 10px;
         padding: 25px;
         margin: 20px 0;
@@ -120,64 +137,136 @@ st.markdown("""
     }
     
     .info-card:hover {
-        transform: translateX(5px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 5px 20px rgba(12,12,92,0.08);
+        transform: translateY(-3px);
     }
     
     .info-card h3 {
         color: #0C0C5C;
-        font-size: 1.5em;
+        font-size: 1.4em;
         margin-bottom: 15px;
         display: flex;
         align-items: center;
     }
     
+    .info-card .icon {
+        margin-right: 12px;
+        font-size: 1.4em;
+    }
+    
     .info-card p {
         color: #444;
         line-height: 1.8;
-        font-size: 1.05em;
+        font-size: 1.02em;
+        margin-bottom: 15px;
     }
     
     .info-card ul {
         margin-left: 20px;
-        color: #444;
-        line-height: 2;
+        color: #555;
+        line-height: 1.9;
     }
     
-    /* Iconos */
-    .icon {
-        display: inline-block;
-        margin-right: 10px;
-        font-size: 1.3em;
+    .info-card ul li strong {
+        color: #0C0C5C;
     }
     
     /* Alert boxes */
     .alert-info {
-        background-color: #e3f2fd;
-        border-left: 5px solid #0C0C5C;
-        padding: 15px;
+        background-color: #f8f9ff;
+        border-left: 4px solid #0C0C5C;
+        padding: 20px;
         border-radius: 8px;
-        margin: 20px 0;
+        margin: 25px 0;
+        color: #333;
     }
     
     .alert-warning {
-        background-color: #fff3e0;
-        border-left: 5px solid #C40012;
-        padding: 15px;
+        background-color: #fff8f8;
+        border-left: 4px solid #C40012;
+        padding: 20px;
         border-radius: 8px;
-        margin: 20px 0;
+        margin: 25px 0;
+        color: #333;
+    }
+    
+    .alert-info strong, .alert-warning strong {
+        color: #0C0C5C;
+        font-size: 1.05em;
+    }
+    
+    /* Imagen decorativa */
+    .image-container {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin: 25px 0;
+    }
+    
+    /* Support box */
+    .support-box {
+        background: #f8f9ff;
+        border: 2px solid #0C0C5C;
+        border-radius: 10px;
+        padding: 25px;
+        margin-top: 25px;
+    }
+    
+    .support-box h4 {
+        color: #0C0C5C;
+        margin-bottom: 15px;
+        font-size: 1.3em;
+    }
+    
+    .support-box p {
+        color: #555;
+        line-height: 1.8;
+        margin: 5px 0;
+    }
+    
+    .support-box .red-text {
+        color: #C40012;
+        font-weight: 600;
     }
     
     /* Footer */
     .custom-footer {
         text-align: center;
-        padding: 30px;
+        padding: 40px 20px;
         color: #666;
-        border-top: 2px solid #e0e0e0;
-        margin-top: 50px;
+        border-top: 1px solid #e0e0e0;
+        margin-top: 60px;
+        background: #fafafa;
+    }
+    
+    .custom-footer p {
+        margin: 5px 0;
+    }
+    
+    /* Badge de normas */
+    .norm-badge {
+        display: inline-block;
+        background: #0C0C5C;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 600;
+        margin: 3px;
+    }
+    
+    /* Separador decorativo */
+    .divider {
+        height: 2px;
+        background: linear-gradient(90deg, #0C0C5C 0%, #C40012 100%);
+        margin: 30px 0;
+        border-radius: 2px;
     }
 </style>
 """, unsafe_allow_html=True)
+
+# Barra superior azul
+st.markdown('<div class="top-bar"></div>', unsafe_allow_html=True)
 
 # Inicializar Supabase
 @st.cache_resource
@@ -206,41 +295,87 @@ def login(email: str, password: str, supabase: Client):
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
-# Contenedor principal
-st.markdown('<div class="main-container">', unsafe_allow_html=True)
+# Header con logo
+st.markdown('<div class="header-section">', unsafe_allow_html=True)
 
-# Header
-st.markdown("""
-<div class="header">
-    <h1>🛢️ Sistema de Gestión de Cumplimiento Normativo</h1>
-    <p>Control y seguimiento de obligaciones en transporte, almacenamiento y distribución de combustibles</p>
-</div>
-""", unsafe_allow_html=True)
+col_logo, col_title = st.columns([1, 4])
 
-# Layout de dos columnas
-col1, col2 = st.columns([1.5, 1])
+with col_logo:
+    # Aquí puedes cargar tu logo
+    # Descomenta y ajusta la ruta cuando tengas tu logo:
+    # try:
+    #     logo = Image.open("logo.png")
+    #     st.image(logo, width=150)
+    # except:
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, #0C0C5C 0%, #1a1a7a 100%); 
+                width: 120px; height: 120px; border-radius: 12px; 
+                display: flex; align-items: center; justify-content: center;
+                box-shadow: 0 4px 15px rgba(12,12,92,0.2);'>
+        <span style='font-size: 3.5em;'>🛢️</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-with col1:
-    st.markdown("## 📋 Marco Normativo")
+with col_title:
+    st.markdown("""
+    <div class="title-section">
+        <h1>Sistema de Gestión de <span class="red-accent">Cumplimiento Normativo</span></h1>
+        <p>Control y seguimiento integral de obligaciones regulatorias en el sector de hidrocarburos</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Contenido principal
+st.markdown('<div class="main-content">', unsafe_allow_html=True)
+
+# Layout principal
+col_left, col_right = st.columns([1.6, 1])
+
+with col_left:
+    st.markdown("## 📋 Marco Normativo y Regulatorio")
     
     st.markdown("""
     <div class="alert-info">
-        <strong>🎯 Objetivo:</strong> Este sistema facilita el cumplimiento de las normativas mexicanas aplicables 
-        al sector de hidrocarburos, combustibles y petrolíferos.
+        <strong>🎯 Objetivo del Sistema:</strong> Facilitar el cumplimiento integral de las normativas 
+        mexicanas aplicables al transporte, almacenamiento, distribución y comercialización de 
+        hidrocarburos, combustibles y petrolíferos, garantizando la operación segura y legal.
     </div>
     """, unsafe_allow_html=True)
+    
+    # Imagen representativa de normatividad
+    # Descomenta cuando tengas tu imagen:
+    # try:
+    #     norm_image = Image.open("normatividad.jpg")
+    #     st.image(norm_image, use_column_width=True, caption="Cumplimiento Normativo en Hidrocarburos")
+    # except:
+    st.markdown("""
+    <div class="image-container">
+        <div style='background: linear-gradient(135deg, rgba(12,12,92,0.9) 0%, rgba(26,26,122,0.9) 100%), 
+                    url("https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800") center/cover;
+                    height: 280px; display: flex; align-items: center; justify-content: center;'>
+            <div style='text-align: center; color: white; padding: 30px;'>
+                <h2 style='font-size: 2em; margin: 0;'>⚖️ Cumplimiento Normativo</h2>
+                <p style='font-size: 1.2em; margin-top: 10px;'>Seguridad · Legalidad · Excelencia Operativa</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
     # Card 1: Transporte
     st.markdown("""
     <div class="info-card">
-        <h3><span class="icon">🚛</span> Transporte de Combustibles</h3>
-        <p>El transporte de hidrocarburos y petrolíferos está regulado por:</p>
+        <h3><span class="icon">🚛</span> Transporte de Combustibles y Petrolíferos</h3>
+        <p>El transporte de hidrocarburos requiere cumplimiento estricto de múltiples normativas:</p>
         <ul>
             <li><strong>NOM-006-ASEA-2017:</strong> Diseño, construcción, operación y mantenimiento de Ductos de Transporte</li>
-            <li><strong>Ley de Hidrocarburos:</strong> Regulación del transporte por ducto, autotanque y otros medios</li>
-            <li><strong>SCT:</strong> Normas de transporte terrestre de materiales peligrosos (NOM-002-SCT)</li>
-            <li><strong>Permisos CRE:</strong> Autorización para transporte de petrolíferos</li>
+            <li><strong>Ley de Hidrocarburos:</strong> Marco legal para transporte por ducto, autotanque y ferrocarril</li>
+            <li><strong>NOM-002-SCT:</strong> Normativa SCT para transporte terrestre de materiales peligrosos</li>
+            <li><strong>Permisos CRE:</strong> Autorización de la Comisión Reguladora de Energía</li>
             <li><strong>Seguros obligatorios:</strong> Cobertura de responsabilidad civil y daños ambientales</li>
+            <li><strong>Capacitación:</strong> Personal certificado en manejo de materiales peligrosos</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -248,14 +383,15 @@ with col1:
     # Card 2: Almacenamiento
     st.markdown("""
     <div class="info-card">
-        <h3><span class="icon">🏭</span> Almacenamiento y Distribución</h3>
-        <p>Las instalaciones de almacenamiento deben cumplir con:</p>
+        <h3><span class="icon">🏭</span> Almacenamiento y Terminales</h3>
+        <p>Las instalaciones de almacenamiento deben cumplir requisitos técnicos y ambientales:</p>
         <ul>
-            <li><strong>NOM-005-ASEA-2016:</strong> Diseño, construcción, operación y mantenimiento de Terminales de Almacenamiento</li>
-            <li><strong>NOM-016-CRE-2016:</strong> Calidad de petrolíferos en estaciones de servicio</li>
-            <li><strong>Permisos ASEA:</strong> Autorización ambiental para almacenamiento</li>
-            <li><strong>Análisis de Riesgo:</strong> Estudios técnicos de seguridad industrial</li>
-            <li><strong>Programa de Prevención:</strong> Plan de respuesta a emergencias</li>
+            <li><strong>NOM-005-ASEA-2016:</strong> Requisitos para Terminales de Almacenamiento y Reparto</li>
+            <li><strong>NOM-016-CRE-2016:</strong> Especificaciones de calidad en instalaciones</li>
+            <li><strong>Permisos ASEA:</strong> Autorización de Impacto Ambiental y Riesgo</li>
+            <li><strong>Análisis de Riesgo:</strong> Estudios técnicos de seguridad industrial y operativa</li>
+            <li><strong>Programa de Prevención:</strong> Plan documentado de respuesta a emergencias</li>
+            <li><strong>Mantenimiento:</strong> Inspecciones periódicas y pruebas de integridad</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -264,27 +400,42 @@ with col1:
     st.markdown("""
     <div class="info-card">
         <h3><span class="icon">⛽</span> Venta y Comercialización</h3>
-        <p>La comercialización de combustibles requiere:</p>
+        <p>La comercialización de combustibles implica cumplimiento fiscal y operativo:</p>
         <ul>
-            <li><strong>Permiso CRE:</strong> Autorización de la Comisión Reguladora de Energía</li>
-            <li><strong>Registro de Contratos:</strong> Ante la Dirección de Comercialización</li>
-            <li><strong>Control Volumétrico:</strong> Sistema de medición y reporte (Anexo 30-A)</li>
-            <li><strong>Precios máximos:</strong> Cumplimiento de disposiciones tarifarias</li>
-            <li><strong>Normas de calidad:</strong> Especificaciones técnicas de producto (NOM-016-CRE)</li>
+            <li><strong>Permiso CRE:</strong> Autorización para comercialización de petrolíferos</li>
+            <li><strong>Registro de Contratos:</strong> Ante la Dirección General de Comercialización</li>
+            <li><strong>Control Volumétrico:</strong> Sistema de medición dinámica (Anexo 30 del CFF)</li>
+            <li><strong>Precios máximos:</strong> Cumplimiento de disposiciones de la CRE</li>
+            <li><strong>NOM-016-CRE:</strong> Especificaciones de calidad de gasolinas y diésel</li>
+            <li><strong>Facturación electrónica:</strong> CFDI con complemento de hidrocarburos</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("""
     <div class="alert-warning">
-        <strong>⚠️ Importante:</strong> El incumplimiento de estas normativas puede resultar en sanciones 
-        administrativas, clausura de instalaciones y responsabilidades penales.
+        <strong>⚠️ Importante:</strong> El incumplimiento de estas normativas puede derivar en sanciones 
+        económicas significativas, clausura temporal o definitiva de instalaciones, suspensión de permisos 
+        y, en casos graves, responsabilidades de carácter penal conforme al Código Penal Federal.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Badges de normas principales
+    st.markdown("""
+    <div style='margin: 30px 0;'>
+        <h4 style='color: #0C0C5C; margin-bottom: 15px;'>📜 Principales Normas Aplicables:</h4>
+        <span class="norm-badge">NOM-005-ASEA</span>
+        <span class="norm-badge">NOM-006-ASEA</span>
+        <span class="norm-badge">NOM-016-CRE</span>
+        <span class="norm-badge">NOM-002-SCT</span>
+        <span class="norm-badge">Ley de Hidrocarburos</span>
+        <span class="norm-badge">Anexo 30 CFF</span>
     </div>
     """, unsafe_allow_html=True)
 
-with col2:
-    st.markdown('<div class="login-box">', unsafe_allow_html=True)
-    st.markdown("## 🔐 Acceso al Sistema")
+with col_right:
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
+    st.markdown("<h2>🔐 Acceso al Sistema</h2>", unsafe_allow_html=True)
     
     if not st.session_state.logged_in:
         supabase = init_supabase()
@@ -293,7 +444,12 @@ with col2:
             with st.form("login_form"):
                 email = st.text_input("📧 Correo electrónico", placeholder="usuario@empresa.com")
                 password = st.text_input("🔑 Contraseña", type="password", placeholder="••••••••")
-                submit = st.form_submit_button("Iniciar Sesión")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    submit = st.form_submit_button("Iniciar Sesión")
+                with col2:
+                    st.form_submit_button("Olvidé mi contraseña", disabled=True)
                 
                 if submit:
                     if email and password:
@@ -301,33 +457,26 @@ with col2:
                             result = login(email, password, supabase)
                             if result:
                                 st.session_state.logged_in = True
-                                st.success("✅ ¡Bienvenido al sistema!")
+                                st.success("✅ ¡Acceso concedido!")
                                 st.balloons()
                                 st.rerun()
                             else:
-                                st.error("❌ Credenciales incorrectas. Intenta nuevamente.")
+                                st.error("❌ Credenciales incorrectas")
                     else:
-                        st.warning("⚠️ Por favor completa todos los campos")
-            
-            st.markdown("---")
-            st.markdown("""
-            <div style='text-align: center; color: white; font-size: 0.9em;'>
-                <p>¿Olvidaste tu contraseña?</p>
-                <p>Contacta al administrador del sistema</p>
-            </div>
-            """, unsafe_allow_html=True)
+                        st.warning("⚠️ Completa todos los campos")
     else:
         st.success("✅ Sesión activa")
         st.markdown("""
-        <div style='color: white; padding: 20px;'>
-            <h3>🎉 ¡Bienvenido!</h3>
-            <p>Ya puedes acceder a todas las funcionalidades del sistema:</p>
-            <ul>
-                <li>📊 Dashboard de cumplimientos</li>
-                <li>📝 Gestión de permisos</li>
-                <li>🚗 Control de vehículos</li>
-                <li>📁 Documentación</li>
-                <li>📈 Reportes y análisis</li>
+        <div style='padding: 20px 0;'>
+            <h3 style='color: #0C0C5C;'>🎉 ¡Bienvenido al Sistema!</h3>
+            <p style='color: #555; line-height: 1.8;'>Accede a todas las funcionalidades:</p>
+            <ul style='color: #555; line-height: 2;'>
+                <li>📊 <strong>Dashboard</strong> de cumplimientos</li>
+                <li>📝 <strong>Gestión</strong> de permisos y licencias</li>
+                <li>🚗 <strong>Control</strong> de flota vehicular</li>
+                <li>📁 <strong>Repositorio</strong> documental</li>
+                <li>📈 <strong>Reportes</strong> ejecutivos</li>
+                <li>🔔 <strong>Alertas</strong> de vencimientos</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -338,16 +487,16 @@ with col2:
     
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Información adicional
-    st.markdown("---")
+    # Support box
     st.markdown("""
-    <div style='background: white; padding: 20px; border-radius: 10px; margin-top: 20px;'>
-        <h4 style='color: #0C0C5C;'>📞 Soporte Técnico</h4>
-        <p style='color: #666;'>
-            ¿Necesitas ayuda?<br>
-            📧 soporte@empresa.com<br>
-            📱 +52 (442) 123-4567<br>
-            🕐 Lun - Vie: 9:00 - 18:00 hrs
+    <div class="support-box">
+        <h4>📞 Soporte y Asistencia</h4>
+        <p><strong>¿Necesitas ayuda?</strong></p>
+        <p>📧 <span class="red-text">soporte@cumplimiento.mx</span></p>
+        <p>📱 <span class="red-text">+52 (442) 123-4567</span></p>
+        <p>🕐 Horario: Lun - Vie<br>9:00 AM - 6:00 PM</p>
+        <p style='margin-top: 15px; font-size: 0.95em;'>
+            Atención personalizada para resolver dudas sobre normatividad y uso del sistema
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -357,10 +506,15 @@ st.markdown('</div>', unsafe_allow_html=True)
 # Footer
 st.markdown("""
 <div class="custom-footer">
-    <p><strong>Sistema de Gestión de Cumplimiento Normativo</strong></p>
-    <p>© 2025 - Todos los derechos reservados</p>
-    <p style='font-size: 0.9em; color: #999;'>
-        Desarrollado para el cumplimiento de normativas mexicanas en el sector de hidrocarburos
+    <p style='color: #0C0C5C; font-weight: 700; font-size: 1.1em;'>
+        Sistema de Gestión de Cumplimiento Normativo
+    </p>
+    <p style='color: #C40012; font-weight: 600;'>
+        Sector Hidrocarburos y Petrolíferos
+    </p>
+    <p style='margin-top: 15px;'>© 2025 - Todos los derechos reservados</p>
+    <p style='font-size: 0.9em; color: #999; margin-top: 10px;'>
+        Cumplimiento integral de normativas mexicanas · ASEA · CRE · SCT · SEMARNAT
     </p>
 </div>
 """, unsafe_allow_html=True)
