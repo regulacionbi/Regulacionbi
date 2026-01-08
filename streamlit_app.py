@@ -18,6 +18,17 @@ st.set_page_config(
 # ===============================
 st.markdown("""
 <style>
+/* Header con barra azul */
+.top-bar {
+    background: linear-gradient(90deg, #0C0C5C 0%, #1a1a7a 100%);
+    height: 8px;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
 /* Ocultar cosas de Streamlit */
 #MainMenu, footer, header {visibility: hidden;}
 
@@ -62,7 +73,7 @@ st.markdown("""
 /* ===== HEADER ===== */
 .top-bar {
     height: 6px;
-    background: linear-gradient(90deg, var(--primary), var(--accent));
+    background: var(--primary);
 }
 
 /* ===== LOGIN ===== */
@@ -112,6 +123,44 @@ section[data-testid="stSidebar"] {
     color: var(--primary);
     font-weight: 700;
 }
+
+ /* Encuadra el container que contiene el título del login */
+div:has(.login-title) {
+    background: white;
+    border: 2px solid var(--primary);
+    border-radius: 14px;
+    padding: 30px;
+    max-width: 420px;
+    margin: auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* Título */
+.login-title {
+    color: var(--primary);
+    margin-bottom: 20px;
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 8px;
+    display: inline-block;
+}
+
+/* Inputs */
+div:has(.login-title) input {
+    border-radius: 8px;
+}
+
+/* Botón */
+div:has(.login-title) button {
+    background-color: var(--primary);
+    color: white;
+    font-weight: 600;
+    border-radius: 8px;
+    width: 100%;
+}
+
+div:has(.login-title) button:hover {
+    background-color: var(--accent);
+}           
 
 /* ===== CONTENIDO ===== */
 .page-title {
@@ -259,42 +308,42 @@ def landing_page():
     # COLUMNA DERECHA (LOGIN)
     # =========================
     with col_right:
-        st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.markdown('<h2 class="login-title">🔐 Acceso al Sistema</h2>', unsafe_allow_html=True)
+        with st.container():
+            st.markdown(
+                "<h2 class='login-title'>🔐 Acceso al Sistema</h2>",
+                unsafe_allow_html=True
+            )
+            supabase = init_supabase()
+            if supabase:
+                with st.form("login_form"):
+                    email = st.text_input(
+                        "Correo",
+                        placeholder="usuario@empresa.com",
+                        label_visibility="collapsed"
+                    )
+                    password = st.text_input(
+                        "Contraseña",
+                        type="password",
+                        placeholder="••••••••",
+                        label_visibility="collapsed"
+                    )
+                    
+                    submit = st.form_submit_button("Iniciar Sesión")
 
-        supabase = init_supabase()
-        if supabase:
-            with st.form("login_form"):
-                email = st.text_input(
-                    "Correo",
-                    placeholder="usuario@empresa.com",
-                    label_visibility="collapsed"
-                )
-                password = st.text_input(
-                    "Contraseña",
-                    type="password",
-                    placeholder="••••••••",
-                    label_visibility="collapsed"
-                )
-
-                submit = st.form_submit_button("Iniciar Sesión")
-
-                if submit:
-                    if email and password:
-                        with st.spinner("Verificando credenciales..."):
-                            result = login_user(email, password, supabase)
-                            if result:
-                                st.session_state.logged_in = True
-                                st.session_state.role = result.user.user_metadata.get(
-                                    "role", "oficina"
-                                )
-                                st.rerun()
-                            else:
-                                st.error("Credenciales incorrectas")
-                    else:
-                        st.warning("Completa los campos")
-
-        st.markdown('</div>', unsafe_allow_html=True)
+                    if submit:
+                        if email and password:
+                            with st.spinner("Verificando credenciales..."):
+                                result = login_user(email, password, supabase)
+                                if result:
+                                    st.session_state.logged_in = True
+                                    st.session_state.role = result.user.user_metadata.get(
+                                        "role", "oficina"
+                                    )
+                                    st.rerun()
+                                else:
+                                    st.error("Credenciales incorrectas")
+                        else:
+                            st.warning("Completa los campos")
 
                 # ===== SOPORTE =====
         st.markdown("""
@@ -310,6 +359,22 @@ def landing_page():
             </p>
         </div>
         """, unsafe_allow_html=True)
+
+    # Footer
+    st.markdown("""
+    <div class="custom-footer">
+        <p style='color: #0C0C5C; font-weight: 700; font-size: 1.1em;'>
+            Sistema de Gestión de Cumplimiento Normativo
+        </p>
+        <p style='color: #C40012; font-weight: 600;'>
+            Sector Hidrocarburos y Petrolíferos
+        </p>
+        <p style='margin-top: 15px;'>© 2025 - Todos los derechos reservados</p>
+        <p style='font-size: 0.9em; color: #999; margin-top: 10px;'>
+            Cumplimiento integral de normativas mexicanas · ASEA · CRE · SCT · SEMARNAT
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # ===============================
