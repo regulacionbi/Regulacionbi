@@ -124,18 +124,7 @@ section[data-testid="stSidebar"] {
     font-weight: 700;
 }
 
- /* Encuadra el container que contiene el título del login */
-div:has(.login-title) {
-    background: white;
-    border: 2px solid var(--primary);
-    border-radius: 14px;
-    padding: 30px;
-    max-width: 420px;
-    margin: auto;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-}
-
-/* Título */
+ /* Título */
 .login-title {
     color: var(--primary);
     margin-bottom: 20px;
