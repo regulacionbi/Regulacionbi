@@ -308,6 +308,8 @@ def landing_page():
     # COLUMNA DERECHA (LOGIN)
     # =========================
     with col_right:
+        st.markdown('<div class="login-scope">', unsafe_allow_html=True)
+
         with st.container():
             st.markdown(
                 "<h2 class='login-title'>🔐 Acceso al Sistema</h2>",
@@ -327,7 +329,6 @@ def landing_page():
                         placeholder="••••••••",
                         label_visibility="collapsed"
                     )
-                    
                     submit = st.form_submit_button("Iniciar Sesión")
 
                     if submit:
@@ -344,6 +345,8 @@ def landing_page():
                                     st.error("Credenciales incorrectas")
                         else:
                             st.warning("Completa los campos")
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
                 # ===== SOPORTE =====
         st.markdown("""
