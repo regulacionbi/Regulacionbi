@@ -7,8 +7,8 @@ from PIL import Image
 # CONFIGURACIÓN GENERAL
 # ===============================
 st.set_page_config(
-    page_title="Sistema de Cumplimiento",
-    page_icon="🛢️",
+    page_title="Control normativo",
+    page_icon="📑",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -66,7 +66,7 @@ st.markdown("""
 
 /* Colores base */
 :root {
-    --primary: #1B05B3;
+    --primary: #0F0575;
     --accent: #C2140F;
 }
 
@@ -136,7 +136,7 @@ section[data-testid="stSidebar"] {
 
 /* ===== CONTENIDO ===== */
 .page-title {
-    color: var(--primary);
+    color: #060547;
     font-weight: 700;
 }
             
@@ -228,10 +228,10 @@ def landing_page():
             pass
 
         st.markdown("""
-        <h1 class="page-title">
-            Sistema de Gestión de <span style="color:#C2140F;">Cumplimiento Normativo</span>
+        <h1 class="page-title"
+            style="color:#060547;">Regulación <p <span style="color:#C2140F; size: 10px;">Cumplimiento Normativo</span> </p>
         </h1>
-        <p>
+        <p style="color:#060547">
             Plataforma integral para el control y seguimiento de obligaciones regulatorias
             en el sector hidrocarburos y petrolíferos.
         </p>
@@ -284,7 +284,7 @@ def landing_page():
 
         with st.container():
             st.markdown(
-                "<h2 class='login-title'>🔐 Acceso al Sistema</h2>",
+                "<h2 class='login-title' style='opacity: 0.5; color:#052547;'>🔐 Inicio de sesión</h2>",
                 unsafe_allow_html=True
             )
             supabase = init_supabase()
