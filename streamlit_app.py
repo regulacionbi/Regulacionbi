@@ -132,7 +132,14 @@ section[data-testid="stSidebar"] {
     padding-bottom: 8px;
     display: inline-block;
 }
-          
+
+/* Imagen decorativa */
+.image-container {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin: 25px 0;
+}         
 
 /* ===== CONTENIDO ===== */
 .page-title {
@@ -181,6 +188,24 @@ section[data-testid="stSidebar"] {
 # Barra superior
 st.markdown('<div class="top-bar"></div>', unsafe_allow_html=True)
 
+# Imagen decorativa
+st.markdown("""
+<div class="image-container">
+    <div style='background: linear-gradient(135deg, rgba(6,5,71,0.9) 0%, rgba(26,26,122,0.9) 100%),
+                url("https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800") center/cover;
+                height: 200px; display: flex; radius: 12px;align-items: center;'>
+        <div style='text-align: left; color: white; padding: 30px;'>
+            <h1 style='font-size: 2.6em; margin: 0; color: white;'>
+                Regulación <p <span style="font-size: 0.8em; color:#BE040F;">Cumplimiento Normativo</span></p>
+            </h1>
+            <p style='font-size: 0.8em; margin-top: 2px; color: #FFF26B; font-weight: 400;'>
+                Seguridad · Legalidad · Excelencia Operativa
+            </p>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
 # ===============================
 # SUPABASE
 # ===============================
@@ -215,7 +240,7 @@ if "role" not in st.session_state:
 # LANDING + LOGIN
 # ===============================
 def landing_page():
-    col_left, col_right = st.columns([1.7, 1])
+    col_left, col_right = st.columns([1.7, .5])
 
     # =========================
     # COLUMNA IZQUIERDA (INFO)
@@ -227,14 +252,9 @@ def landing_page():
         except:
             pass
 
-        st.markdown("""
-        <h1 class="page-title"
-            style="color:#060547;">Regulación <p <span style="color:#C2140F; size: 10px;">Cumplimiento Normativo</span> </p>
-        </h1>
-        <p style="color:#060547">
-            Plataforma integral para el control y seguimiento de obligaciones regulatorias
-            en el sector hidrocarburos y petrolíferos.
-        </p>
+        st.markdown("""<h2 style='opacity: 0.8; font-size: 1.2em; margin-top: 15px; color: #3B6C97;'>
+                        Plataforma integral para el control y seguimiento de obligaciones regulatorias
+                        en el sector hidrocarburos y petrolíferos</h2>
         """, unsafe_allow_html=True)
 
         # -------- TARJETA 1 --------
