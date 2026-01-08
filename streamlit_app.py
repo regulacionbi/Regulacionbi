@@ -369,8 +369,8 @@ def landing_page():
         <div class="support-box">
             <h4>📞 Soporte y Asistencia</h4>
             <p><strong>¿Necesitas ayuda?</strong></p>
-            <p>📧 <span class="accent">soporte@cumplimiento.mx</span></p>
-            <p>📱 <span class="accent">+52 (442) 123-4567</span></p>
+            <p>📧 <span class="accent">bmejia@gasen.mx</span></p>
+            <p>📱 <span class="accent">+52 (442) 561-1606</span></p>
             <p>🕐 Horario: Lun - Vie<br>9:00 AM - 6:00 PM</p>
             <p style="margin-top: 12px; font-size: 0.95em;">
                 Atención personalizada para resolver dudas sobre normatividad
