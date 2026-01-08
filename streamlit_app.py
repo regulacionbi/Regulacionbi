@@ -220,11 +220,32 @@ def init_supabase():
 
 def login_user(email, password, supabase: Client):
     try:
-        return supabase.auth.sign_in_with_password({
+        # 1. Autenticar en auth.users
+        auth_response = supabase.auth.sign_in_with_password({
             "email": email,
             "password": password
         })
-    except:
+        
+        # 2. Si la autenticación es exitosa, buscar el rol en public.Usuarios
+        if auth_response and auth_response.user:
+            user_email = auth_response.user.email
+            
+            # 3. Consultar la tabla Usuarios para obtener el rol
+            usuario_data = supabase.table("Usuarios").select("rol, display_id, id_filial, id_costos").eq("email", user_email).single().execute()
+            
+            # 4. Retornar tanto la respuesta de auth como los datos del usuario
+            return {
+                "auth": auth_response,
+                "rol": usuario_data.data.get("rol"),
+                "display_id": usuario_data.data.get("display_id"),
+                "filial": usuario_data.data.get("id_filial"),
+                "costos": usuario_data.data.get("id_costos")
+            }
+        
+        return None
+        
+    except Exception as e:
+        print(f"Error en login: {e}")
         return None
 
 # ===============================
@@ -329,14 +350,17 @@ def landing_page():
                                 result = login_user(email, password, supabase)
                                 if result:
                                     st.session_state.logged_in = True
-                                    st.session_state.role = result.user.user_metadata.get(
-                                        "role", "oficina"
-                                    )
+                                    st.session_state.role = result["rol"]
+                                    st.session_state.display_id = result["display_id"]
+                                    st.session_state.filial = result["filial"]
+                                    st.session_state.costos = result["costos"]
+                                    st.success("✅ ¡Acceso concedido!")
+                                    st.balloons()
                                     st.rerun()
                                 else:
-                                    st.error("Credenciales incorrectas")
+                                    st.error("❌ Credenciales incorrectas o usuario no registrado")
                         else:
-                            st.warning("Completa los campos")
+                            st.warning("⚠️ Completa todos los campos")
 
         st.markdown("</div>", unsafe_allow_html=True)
 
