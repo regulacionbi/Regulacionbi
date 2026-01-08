@@ -77,7 +77,7 @@ st.markdown("""
 }
 
 /* ===== LOGIN ===== */
-.login-box {
+.login-scope > div {
     background: white;
     border: 2px solid var(--primary);
     border-radius: 14px;
@@ -96,12 +96,12 @@ st.markdown("""
 }
 
 /* Inputs */
-.login-box input {
+.login-scope input {
     border-radius: 8px !important;
 }
 
-/* Botones */
-.login-box button {
+/* Botón */
+.login-scope button {
     background-color: var(--primary);
     color: white;
     border-radius: 8px;
@@ -109,7 +109,7 @@ st.markdown("""
     width: 100%;
 }
 
-.login-box button:hover {
+.login-scope button:hover {
     background-color: var(--accent);
 }
 
@@ -143,24 +143,7 @@ div:has(.login-title) {
     padding-bottom: 8px;
     display: inline-block;
 }
-
-/* Inputs */
-div:has(.login-title) input {
-    border-radius: 8px;
-}
-
-/* Botón */
-div:has(.login-title) button {
-    background-color: var(--primary);
-    color: white;
-    font-weight: 600;
-    border-radius: 8px;
-    width: 100%;
-}
-
-div:has(.login-title) button:hover {
-    background-color: var(--accent);
-}           
+          
 
 /* ===== CONTENIDO ===== */
 .page-title {
