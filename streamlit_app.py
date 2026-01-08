@@ -118,6 +118,42 @@ section[data-testid="stSidebar"] {
     color: var(--primary);
     font-weight: 700;
 }
+            
+/* ===== SUPPORT BOX ===== */
+.support-box {
+    background: #f9f9ff;
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+    padding: 22px;
+    margin-top: 25px;
+}
+
+.support-box h4 {
+    color: var(--primary);
+    margin-bottom: 12px;
+    font-size: 1.25em;
+}
+
+.support-box p {
+    color: #555;
+    line-height: 1.8;
+    margin: 4px 0;
+}
+
+.support-box .accent {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* ===== FOOTER ===== */
+.custom-footer {
+    margin-top: 80px;
+    padding: 40px 20px;
+    text-align: center;
+    border-top: 1px solid #e0e0e0;
+    background: #fafafa;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -259,6 +295,22 @@ def landing_page():
                         st.warning("Completa los campos")
 
         st.markdown('</div>', unsafe_allow_html=True)
+
+                # ===== SOPORTE =====
+        st.markdown("""
+        <div class="support-box">
+            <h4>📞 Soporte y Asistencia</h4>
+            <p><strong>¿Necesitas ayuda?</strong></p>
+            <p>📧 <span class="accent">soporte@cumplimiento.mx</span></p>
+            <p>📱 <span class="accent">+52 (442) 123-4567</span></p>
+            <p>🕐 Horario: Lun - Vie<br>9:00 AM - 6:00 PM</p>
+            <p style="margin-top: 12px; font-size: 0.95em;">
+                Atención personalizada para resolver dudas sobre normatividad
+                y uso del sistema.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
 
 # ===============================
 # APP PRINCIPAL
