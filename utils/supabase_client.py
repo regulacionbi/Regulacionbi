@@ -21,3 +21,11 @@ def get_supabase_client() -> Client:
         return None
     
     return create_client(url, key)
+
+def get_current_user(supabase: Client):
+    try:
+        session = supabase.auth.get_session()
+        if session and session.user:
+            return session.user
+    except Exception:
+        return None

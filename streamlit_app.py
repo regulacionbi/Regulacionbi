@@ -2,6 +2,35 @@ import streamlit as st
 import os
 from supabase import create_client, Client
 from PIL import Image
+from utils.supabase_client import get_supabase_client, get_current_user
+
+# ===============================
+# INICIALIZAR SESSION STATE
+# ===============================
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if "role" not in st.session_state:
+    st.session_state.role = None
+
+if "current_page" not in st.session_state:
+    st.session_state.current_page = None
+
+supabase = get_supabase_client()
+
+if supabase and not st.session_state.logged_in:
+    user = get_current_user(supabase)
+
+    if user:
+        st.session_state.logged_in = True
+        st.session_state.role = user.user_metadata.get("rol")
+        st.session_state.display_id = user.user_metadata.get("display_id")
+        st.session_state.nombre = user.user_metadata.get("nombre")
+        st.session_state.filial = user.user_metadata.get("filial")
+        st.session_state.costos = user.user_metadata.get("costos")
+
+
+
 
 # ===============================
 # CONFIGURACIÓN GENERAL
@@ -398,7 +427,8 @@ st.markdown("""
 # FLUJO PRINCIPAL
 # ===============================
 
-if st.session_state.logged_in and st.session_state.go_dashboard:
-    st.session_state.go_dashboard = False
-    st.switch_page("pages/Dashboard.py")
+if st.session_state.logged_in:
+    target = st.session_state.current_page or "pages/Dashboard.py"
+    st.switch_page(target)
+    st.stop()
 

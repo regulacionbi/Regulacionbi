@@ -5,6 +5,8 @@ import sys
 sys.path.append('..')
 from utils.supabase_client import get_supabase_client
 
+st.session_state.current_page = "pages/Dashboard.py"
+
 # ===============================
 # PROTECCIÓN DE PÁGINA
 # ===============================
@@ -21,18 +23,17 @@ if st.session_state.get("role") != "admdr":
 # ===============================
 # CONFIGURACIÓN
 # ===============================
-#st.set_page_config(
-    #page_title="Dashboard - Control Normativo",
-    #page_icon="🏠",
-    #layout="wide"
-#)
-
+st.set_page_config(
+    page_title="Dashboard - Control Normativo",
+    page_icon="🏠",
+    layout="wide"
+)
 # CSS personalizado
 st.markdown("""
 <style>
     /* Sidebar azul */
     section[data-testid="stSidebar"] {
-        background-color: #457EB0;
+        background-color: #2E2F70 !important;
     }
     
     section[data-testid="stSidebar"] * {
