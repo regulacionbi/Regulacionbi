@@ -10,7 +10,7 @@ from utils.supabase_client import get_supabase_client
 # ===============================
 if not st.session_state.get("logged_in", False):
     st.warning("⚠️ Debes iniciar sesión primero")
-    st.switch_page("app_v2.py")
+    st.switch_page("streamlit_app.py")
     st.stop()
 
 # Solo admdr puede ver esta página
@@ -113,11 +113,11 @@ with st.sidebar:
     st.markdown("### 📊 Menú")
     
     menu_options = {
-        "🏠 Dashboard": "1_🏠_Dashboard.py",
-        "👥 Usuarios": "2_👥_Usuarios.py",
-        "📋 Permisos": "3_📋_Permisos.py",
-        "🚗 Flota": "4_🚗_Flota.py",
-        "📅 Calendario": "5_📅_Calendario.py"
+        "🏠 Dashboard": "Dashboard.py",
+        "👥 Usuarios": "Usuarios.py",
+        "📋 Permisos": "Permisos.py",
+        "🚗 Flota": "Flota.py",
+        "📅 Calendario": "Calendario.py"
     }
     
     for label, page in menu_options.items():
@@ -130,7 +130,7 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
-        st.switch_page("app_v2.py")
+        st.switch_page("streamlit_app.py")
 
 # ===============================
 # CONTENIDO PRINCIPAL
