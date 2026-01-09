@@ -21,11 +21,11 @@ if st.session_state.get("role") != "admdr":
 # ===============================
 # CONFIGURACIÓN
 # ===============================
-st.set_page_config(
-    page_title="Dashboard - Control Normativo",
-    page_icon="🏠",
-    layout="wide"
-)
+#st.set_page_config(
+    #page_title="Dashboard - Control Normativo",
+    #page_icon="🏠",
+    #layout="wide"
+#)
 
 # CSS personalizado
 st.markdown("""
