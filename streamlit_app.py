@@ -1,6 +1,5 @@
 import streamlit as st
 from supabase import create_client, Client
-import os
 from PIL import Image
 
 # ===============================
@@ -8,7 +7,7 @@ from PIL import Image
 # ===============================
 st.set_page_config(
     page_title="Control normativo",
-    page_icon="📑",
+    page_icon="🛡️️",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -113,40 +112,14 @@ st.markdown("""
     background-color: var(--accent);
 }
 
-/* ===== SIDEBAR ===== */
-section[data-testid="stSidebar"] {
-    background-color: #f8f8ff;
-    border-right: 2px solid var(--primary);
-}
-
-.sidebar-title {
-    color: var(--primary);
-    font-weight: 700;
-}
-
- /* Título */
-.login-title {
-    color: var(--primary);
-    margin-bottom: 20px;
-    border-bottom: 3px solid var(--accent);
-    padding-bottom: 8px;
-    display: inline-block;
-}
-
 /* Imagen decorativa */
 .image-container {
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     margin: 25px 0;
-}         
-
-/* ===== CONTENIDO ===== */
-.page-title {
-    color: #060547;
-    font-weight: 700;
 }
-            
+
 /* ===== SUPPORT BOX ===== */
 .support-box {
     background: #f9f9ff;
@@ -181,29 +154,7 @@ section[data-testid="stSidebar"] {
     border-top: 1px solid #e0e0e0;
     background: #fafafa;
 }
-
 </style>
-""", unsafe_allow_html=True)
-
-# Barra superior
-st.markdown('<div class="top-bar"></div>', unsafe_allow_html=True)
-
-# Imagen decorativa
-st.markdown("""
-<div class="image-container">
-    <div style='background: linear-gradient(135deg, rgba(6,5,71,0.9) 0%, rgba(26,26,122,0.9) 100%),
-                url("https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800") center/cover;
-                height: 200px; display: flex; radius: 12px;align-items: center;'>
-        <div style='text-align: left; color: white; padding: 30px;'>
-            <h1 style='font-size: 2.6em; margin: 0; color: white;'>
-                Regulación <p <span style="font-size: 0.8em; color:#BE040F;">Cumplimiento Normativo</span></p>
-            </h1>
-            <p style='font-size: 0.8em; margin-top: 2px; color: #FFF26B; font-weight: 400;'>
-                Seguridad · Legalidad · Excelencia Operativa
-            </p>
-        </div>
-    </div>
-</div>
 """, unsafe_allow_html=True)
 
 # ===============================
@@ -214,38 +165,41 @@ def init_supabase():
     url = st.secrets.get("SUPABASE_URL", "")
     key = st.secrets.get("SUPABASE_KEY", "")
     if not url or not key:
-        st.error("Configura SUPABASE_URL y SUPABASE_KEY")
+        st.error("⚠️ Configura SUPABASE_URL y SUPABASE_KEY")
         return None
     return create_client(url, key)
 
 def login_user(email, password, supabase: Client):
+    """Autentica usuario y obtiene sus datos desde la tabla Usuarios"""
     try:
+        # 1. Autenticar en auth.users
         auth_response = supabase.auth.sign_in_with_password({
             "email": email,
             "password": password
         })
-        
+
         if auth_response and auth_response.user:
             user_email = auth_response.user.email
-            
-            # Traer nombre, rol y demás datos
+
+            # 2. Obtener datos del usuario desde tabla Usuarios
             usuario_data = supabase.table("Usuarios").select(
-                "rol, display_id, id_filial, id_costos, nombre"  # ← Agregar nombre
+                "rol, display_id, id_filial, id_costos, nombre"
             ).eq("correo", user_email).single().execute()
-            
-            return {
-                "auth": auth_response,
-                "rol": usuario_data.data.get("rol"),
-                "display_id": usuario_data.data.get("display_id"),
-                "nombre": usuario_data.data.get("nombre"),  # ← NUEVO
-                "filial": usuario_data.data.get("id_filial"),
-                "costos": usuario_data.data.get("id_costos")
-            }
-        
+
+            if usuario_data.data:
+                return {
+                    "auth": auth_response,
+                    "rol": usuario_data.data.get("rol"),
+                    "display_id": usuario_data.data.get("display_id"),
+                    "nombre": usuario_data.data.get("nombre"),
+                    "filial": usuario_data.data.get("id_filial"),
+                    "costos": usuario_data.data.get("id_costos")
+                }
+
         return None
-        
+
     except Exception as e:
-        print(f"Error en login: {e}")
+        print(f"❌ Error en login: {e}")
         return None
 
 # ===============================
@@ -258,182 +212,183 @@ if "role" not in st.session_state:
     st.session_state.role = None
 
 # ===============================
-# LANDING + LOGIN
+# SI YA ESTÁ LOGUEADO, REDIRIGIR
 # ===============================
-def landing_page():
-    col_left, col_right = st.columns([1.7, .35])
+if st.session_state.logged_in:
+    st.switch_page("pages/Dashboard.py")
+    st.stop()
 
-    # =========================
-    # COLUMNA IZQUIERDA (INFO)
-    # =========================
-    with col_left:
-        try:
-            logo = Image.open("logo.png")
-            st.image(logo, width=160)
-        except:
-            pass
+# ===============================
+# LANDING PAGE + LOGIN
+# ===============================
 
-        st.markdown("""<h2 style='opacity: 0.8; font-size: 1.2em; margin-top: 15px; color: #3B6C97;'>
-                        Plataforma integral para el control y seguimiento de obligaciones regulatorias
-                        en el sector hidrocarburos y petrolíferos</h2>
-        """, unsafe_allow_html=True)
+# Barra superior
+st.markdown('<div class="top-bar"></div>', unsafe_allow_html=True)
 
-        # -------- TARJETA 1 --------
-        st.markdown("""
-        <div class="info-card">
-            <h3>🚛 Transporte</h3>
-            <ul>
-                <li><strong>NOM-006-ASEA</strong> – Ductos y transporte</li>
-                <li><strong>NOM-002-SCT</strong> – Materiales peligrosos</li>
-                <li>Permisos CRE</li>
-                <li>Capacitación obligatoria</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # -------- TARJETA 2 --------
-        st.markdown("""
-        <div class="info-card">
-            <h3>🏭 Almacenamiento</h3>
-            <ul>
-                <li><strong>NOM-005-ASEA</strong></li>
-                <li>Impacto ambiental</li>
-                <li>Análisis de riesgo</li>
-                <li>Mantenimiento periódico</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # -------- TARJETA 3 --------
-        st.markdown("""
-        <div class="info-card">
-            <h3>⛽ Comercialización</h3>
-            <ul>
-                <li>Permiso CRE</li>
-                <li>Control volumétrico</li>
-                <li>CFDI hidrocarburos</li>
-                <li>NOM-016-CRE</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # =========================
-    # COLUMNA DERECHA (LOGIN)
-    # =========================
-    with col_right:
-        st.markdown('<div class="login-scope">', unsafe_allow_html=True)
-
-        with st.container():
-            st.markdown(
-                "<h2 class='login-title' style='opacity: 0.5; color:#052547;'>🔐 Inicio de sesión</h2>",
-                unsafe_allow_html=True
-            )
-            supabase = init_supabase()
-            if supabase:
-                with st.form("login_form"):
-                    email = st.text_input(
-                        "Correo",
-                        placeholder="usuario@empresa.com",
-                        label_visibility="collapsed"
-                    )
-                    password = st.text_input(
-                        "Contraseña",
-                        type="password",
-                        placeholder="••••••••",
-                        label_visibility="collapsed"
-                    )
-                    submit = st.form_submit_button("Iniciar Sesión")
-
-                    if submit:
-                        if email and password:
-                            with st.spinner("Verificando credenciales..."):
-                                result = login_user(email, password, supabase)
-                                if result:
-                                    st.session_state.logged_in = True
-                                    st.session_state.role = result["rol"]
-                                    st.session_state.display_id = result["display_id"]
-                                    st.session_state.nombre = result["nombre"]  # ← AGREGAR ESTO
-                                    st.session_state.filial = result["filial"]
-                                    st.session_state.costos = result["costos"]
-                                    st.success("✅ ¡Acceso concedido!")
-                                    st.balloons()
-                                    # Redirigir al dashboard según rol
-                                    st.switch_page("pages/Dashboard.py")
-                                else:
-                                    st.error("❌ Credenciales incorrectas o usuario no registrado")
-                        else:
-                            st.warning("⚠️ Completa todos los campos")
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-                # ===== SOPORTE =====
-        st.markdown("""
-        <div class="support-box">
-            <h4>📞 Soporte y Asistencia</h4>
-            <p><strong>¿Necesitas ayuda?</strong></p>
-            <p>📧 <span class="accent">bmejia@gasen.mx</span></p>
-            <p>📱 <span class="accent">+52 (442) 561-1606</span></p>
-            <p>🕐 Horario: Lun - Vie<br>9:00 AM - 6:00 PM</p>
-            <p style="margin-top: 12px; font-size: 0.95em;">
-                Atención personalizada para resolver dudas sobre normatividad
-                y uso del sistema.
+# Imagen decorativa
+st.markdown("""
+<div class="image-container">
+    <div style='background: linear-gradient(135deg, rgba(6,5,71,0.9) 0%, rgba(26,26,122,0.9) 100%),
+                url("https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800") center/cover;
+                height: 200px; display: flex; border-radius: 12px; align-items: center;'>
+        <div style='text-align: left; color: white; padding: 30px;'>
+            <h1 style='font-size: 2.6em; margin: 0; color: white;'>
+                Regulación 
+            </h1>
+            <p style="font-size: 2em; color:#BE040F;">
+            Cumplimiento Normativo
+            </p>
+            <p style='font-size: 0.8em; margin-top: 2px; color: #FFF26B; font-weight: 400;'>
+                Seguridad · Legalidad · Excelencia Operativa
             </p>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-    # Footer
+# Layout principal
+col_left, col_right = st.columns([1.7, 0.35])
+
+# =========================
+# COLUMNA IZQUIERDA (INFO)
+# =========================
+with col_left:
+    try:
+        logo = Image.open("logo.png")
+        st.image(logo, width=160)
+    except:
+        pass
+
     st.markdown("""
-    <div class="custom-footer">
-        <p style='color: #0C0C5C; font-weight: 700; font-size: 1.1em;'>
-            Sistema de Gestión de Cumplimiento Normativo
-        </p>
-        <p style='color: #C40012; font-weight: 600;'>
-            Sector Hidrocarburos y Petrolíferos
-        </p>
-        <p style='margin-top: 15px;'>© 2025 - Todos los derechos reservados</p>
-        <p style='font-size: 0.9em; color: #999; margin-top: 10px;'>
-            Cumplimiento integral de normativas mexicanas · ASEA · CRE · SCT · SEMARNAT
+    <h2 style='opacity: 0.8; font-size: 1.2em; margin-top: 15px; color: #3B6C97;'>
+        Plataforma integral para el control y seguimiento de obligaciones regulatorias
+        en el sector hidrocarburos y petrolíferos
+    </h2>
+    """, unsafe_allow_html=True)
+
+    # -------- TARJETA 1 --------
+    st.markdown("""
+    <div class="info-card">
+        <h3>🚛 Transporte</h3>
+        <ul>
+            <li><strong>NOM-006-ASEA</strong> – Ductos y transporte</li>
+            <li><strong>NOM-002-SCT</strong> – Materiales peligrosos</li>
+            <li>Permisos CRE</li>
+            <li>Capacitación obligatoria</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # -------- TARJETA 2 --------
+    st.markdown("""
+    <div class="info-card">
+        <h3>🏭 Almacenamiento</h3>
+        <ul>
+            <li><strong>NOM-005-ASEA</strong></li>
+            <li>Impacto ambiental</li>
+            <li>Análisis de riesgo</li>
+            <li>Mantenimiento periódico</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # -------- TARJETA 3 --------
+    st.markdown("""
+    <div class="info-card">
+        <h3>⛽ Comercialización</h3>
+        <ul>
+            <li>Permiso CRE</li>
+            <li>Control volumétrico</li>
+            <li>CFDI hidrocarburos</li>
+            <li>NOM-016-CRE</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+# =========================
+# COLUMNA DERECHA (LOGIN)
+# =========================
+with col_right:
+    st.markdown('<div class="login-scope">', unsafe_allow_html=True)
+
+    with st.container():
+        st.markdown(
+            "<h2 class='login-title' style='opacity: 0.3; color:#052547; font-size: 1.9em;'>" \
+            "🔐 Inicio de sesión"
+            "</h2>",
+            unsafe_allow_html=True
+        )
+
+        supabase = init_supabase()
+
+        if supabase:
+            with st.form("login_form"):
+                email = st.text_input(
+                    "Correo",
+                    placeholder="usuario@empresa.com",
+                    label_visibility="collapsed"
+                )
+                password = st.text_input(
+                    "Contraseña",
+                    type="password",
+                    placeholder="••••••••",
+                    label_visibility="collapsed"
+                )
+                submit = st.form_submit_button("Iniciar Sesión")
+
+                if submit:
+                    if email and password:
+                        with st.spinner("Verificando credenciales..."):
+                            result = login_user(email, password, supabase)
+
+                            if result:
+                                # Guardar datos en session_state
+                                st.session_state.logged_in = True
+                                st.session_state.role = result["rol"]
+                                st.session_state.display_id = result["display_id"]
+                                st.session_state.nombre = result["nombre"]
+                                st.session_state.filial = result["filial"]
+                                st.session_state.costos = result["costos"]
+
+                                st.success("✅ ¡Acceso concedido!")
+                                st.balloons()
+
+                                # Redirigir al dashboard
+                                st.switch_page("pages/1_🏠_Dashboard.py")
+                            else:
+                                st.error("❌ Credenciales incorrectas o usuario no registrado")
+                    else:
+                        st.warning("⚠️ Completa todos los campos")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # ===== SOPORTE =====
+    st.markdown("""
+    <div class="support-box">
+        <h4>📞 Soporte y Asistencia</h4>
+        <p><strong>¿Necesitas ayuda?</strong></p>
+        <p>📧 <span class="accent">bmejia@gasen.mx</span></p>
+        <p>📱 <span class="accent">+52 (442) 561-1606</span></p>
+        <p>🕐 Horario: Lun - Vie<br>9:00 AM - 6:00 PM</p>
+        <p style="margin-top: 12px; font-size: 0.95em;">
+            Atención personalizada para resolver dudas sobre normatividad
+            y uso del sistema.
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-
-# ===============================
-# APP PRINCIPAL
-# ===============================
-def main_app():
-    with st.sidebar:
-        st.markdown("<h3 class='sidebar-title'>📂 Menú</h3>", unsafe_allow_html=True)
-
-        role = st.session_state.role
-
-        pages = []
-
-        if role in ["admdr"]:
-            pages = ["Dashboard", "Usuarios", "Catálogos", "Reportes"]
-        elif role == "filiar":
-            pages = ["Dashboard", "Centros de Costo", "Reportes"]
-        elif role == "gerencial":
-            pages = ["Dashboard", "Mi Centro de Costos"]
-        elif role == "oficina":
-            pages = ["Vehículos", "Cumplimientos", "Permisos"]
-
-        page = st.radio("Navegación", pages)
-
-        if st.button("🚪 Cerrar sesión"):
-            st.session_state.logged_in = False
-            st.session_state.role = None
-            st.rerun()
-
-    # ===== CONTENIDO =====
-    st.markdown(f"<h1 class='page-title'>{page}</h1>", unsafe_allow_html=True)
-
-    st.write(f"Contenido de **{page}** para rol **{role}**")
-
-# ===============================
-# FLUJO PRINCIPAL
-# ===============================
-if not st.session_state.logged_in:
-    landing_page()
-else:
-    main_app()
+# Footer
+st.markdown("""
+<div class="custom-footer">
+    <p style='color: #0C0C5C; font-weight: 700; font-size: 1.1em;'>
+        Sistema de Gestión de Cumplimiento Normativo
+    </p>
+    <p style='color: #C40012; font-weight: 600;'>
+        Sector Hidrocarburos y Petrolíferos
+    </p>
+    <p style='margin-top: 15px;'>© 2025 - Todos los derechos reservados</p>
+    <p style='font-size: 0.9em; color: #999; margin-top: 10px;'>
+        Cumplimiento integral de normativas mexicanas · ASEA · CRE · SCT · SEMARNAT
+    </p>
+</div>
+""", unsafe_allow_html=True)
