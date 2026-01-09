@@ -220,24 +220,24 @@ def init_supabase():
 
 def login_user(email, password, supabase: Client):
     try:
-        # 1. Autenticar en auth.users
         auth_response = supabase.auth.sign_in_with_password({
             "email": email,
             "password": password
         })
         
-        # 2. Si la autenticación es exitosa, buscar el rol en public.Usuarios
         if auth_response and auth_response.user:
             user_email = auth_response.user.email
             
-            # 3. Consultar la tabla Usuarios para obtener el rol
-            usuario_data = supabase.table("Usuarios").select("rol, display_id, id_filial, id_costos").eq("email", user_email).single().execute()
+            # Traer nombre, rol y demás datos
+            usuario_data = supabase.table("Usuarios").select(
+                "rol, display_id, id_filial, id_costos, nombre"  # ← Agregar nombre
+            ).eq("correo", user_email).single().execute()
             
-            # 4. Retornar tanto la respuesta de auth como los datos del usuario
             return {
                 "auth": auth_response,
                 "rol": usuario_data.data.get("rol"),
                 "display_id": usuario_data.data.get("display_id"),
+                "nombre": usuario_data.data.get("nombre"),  # ← NUEVO
                 "filial": usuario_data.data.get("id_filial"),
                 "costos": usuario_data.data.get("id_costos")
             }
@@ -261,7 +261,7 @@ if "role" not in st.session_state:
 # LANDING + LOGIN
 # ===============================
 def landing_page():
-    col_left, col_right = st.columns([1.7, .5])
+    col_left, col_right = st.columns([1.7, .35])
 
     # =========================
     # COLUMNA IZQUIERDA (INFO)
@@ -352,11 +352,13 @@ def landing_page():
                                     st.session_state.logged_in = True
                                     st.session_state.role = result["rol"]
                                     st.session_state.display_id = result["display_id"]
+                                    st.session_state.nombre = result["nombre"]  # ← AGREGAR ESTO
                                     st.session_state.filial = result["filial"]
                                     st.session_state.costos = result["costos"]
                                     st.success("✅ ¡Acceso concedido!")
                                     st.balloons()
-                                    st.rerun()
+                                    # Redirigir al dashboard según rol
+                                    st.switch_page("pages/Dashboard.py")
                                 else:
                                     st.error("❌ Credenciales incorrectas o usuario no registrado")
                         else:
