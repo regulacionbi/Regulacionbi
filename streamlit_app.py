@@ -184,7 +184,7 @@ def login_user(email, password, supabase: Client):
             # 2. Obtener datos del usuario desde tabla Usuarios
             usuario_data = supabase.table("Usuarios").select(
                 "rol, display_id, id_filial, id_costos, nombre"
-            ).eq("correo", user_email).single().execute()
+            ).eq("email", user_email).single().execute()
 
             if usuario_data.data:
                 return {
@@ -354,7 +354,7 @@ with col_right:
                                 st.balloons()
 
                                 # Redirigir al dashboard
-                                st.switch_page("pages/1_🏠_Dashboard.py")
+                                st.switch_page("pages/Dashboard.py")
                             else:
                                 st.error("❌ Credenciales incorrectas o usuario no registrado")
                     else:
