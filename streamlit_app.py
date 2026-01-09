@@ -215,7 +215,7 @@ if "role" not in st.session_state:
 # SI YA ESTÁ LOGUEADO, REDIRIGIR
 # ===============================
 if st.session_state.logged_in:
-    st.switch_page("pages/Dashboard.py")
+    st.switch_page("Dashboard.py")
     st.stop()
 
 # ===============================
@@ -354,7 +354,7 @@ with col_right:
                                 st.balloons()
 
                                 # Redirigir al dashboard
-                                st.switch_page("pages/Dashboard.py")
+                                st.switch_page("Dashboard.py")
                             else:
                                 st.error("❌ Credenciales incorrectas o usuario no registrado")
                     else:
