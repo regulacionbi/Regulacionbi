@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 from supabase import create_client, Client
 from PIL import Image
 
@@ -211,12 +212,9 @@ if "logged_in" not in st.session_state:
 if "role" not in st.session_state:
     st.session_state.role = None
 
-# ===============================
-# SI YA ESTÁ LOGUEADO, REDIRIGIR
-# ===============================
-if st.session_state.logged_in:
-    st.switch_page("Dashboard.py")
-    st.stop()
+if "go_dashboard" not in st.session_state:
+    st.session_state.go_dashboard = False
+
 
 # ===============================
 # LANDING PAGE + LOGIN
@@ -350,11 +348,14 @@ with col_right:
                                 st.session_state.filial = result["filial"]
                                 st.session_state.costos = result["costos"]
 
+                                # Bandera para redirección
+                                st.session_state.go_dashboard = True
+
                                 st.success("✅ ¡Acceso concedido!")
                                 st.balloons()
-
-                                # Redirigir al dashboard
-                                st.switch_page("Dashboard.py")
+    # Forzar rerun limpio
+                                # Forzar rerun limpio
+                                st.rerun()
                             else:
                                 st.error("❌ Credenciales incorrectas o usuario no registrado")
                     else:
@@ -392,3 +393,12 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
+# ===============================
+# FLUJO PRINCIPAL
+# ===============================
+
+if st.session_state.logged_in and st.session_state.go_dashboard:
+    st.session_state.go_dashboard = False
+    st.switch_page("pages/Dashboard.py")
+
