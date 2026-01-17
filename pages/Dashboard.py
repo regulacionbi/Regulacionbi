@@ -31,50 +31,94 @@ st.set_page_config(
 # CSS personalizado
 st.markdown("""
 <style>
-    /* Sidebar azul */
-    section[data-testid="stSidebar"] {
-        background-color: #2E2F70 !important;
-    }
-    
-    section[data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    
-    /* KPI Cards */
-    .kpi-card {
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        border-left: 5px solid;
-    }
-    
-    .kpi-card.green { border-left-color: #28a745; }
-    .kpi-card.yellow { border-left-color: #ffc107; }
-    .kpi-card.red { border-left-color: #dc3545; }
-    .kpi-card.blue { border-left-color: #007bff; }
-    
-    .kpi-number {
-        font-size: 3em;
-        font-weight: 700;
-        margin: 10px 0;
-    }
-    
-    .kpi-label {
-        font-size: 1.1em;
-        color: #666;
-        font-weight: 600;
-    }
-    
-    /* Bienvenida */
-    .welcome-banner {
-        background: linear-gradient(135deg, #457EB0 0%, #2c5a8a 100%);
-        color: white;
-        padding: 30px;
-        border-radius: 12px;
-        margin-bottom: 30px;
-    }
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* OCULTAR MENU AUTOMÁTICO DE STREAMLIT */
+div[data-testid="stSidebarNav"] {
+    display: none;
+}
+            
+/* ===============================
+TIPOGRAFÍA GLOBAL
+=============================== */
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+/* ===============================
+SIDEBAR
+=============================== */
+section[data-testid="stSidebar"] {
+    background-color: #2E2F70 !important;
+}
+
+section[data-testid="stSidebar"] * {
+    color: white !important;
+}
+
+/* ===============================
+KPI CARDS
+=============================== */
+.kpi-card {
+    background: white;
+    border-radius: 12px;
+    padding: clamp(16px, 2vw, 24px);
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-left: 5px solid;
+}
+
+.kpi-card.green  { border-left-color: #28a745; }
+.kpi-card.yellow { border-left-color: #ffc107; }
+.kpi-card.red    { border-left-color: #dc3545; }
+.kpi-card.blue   { border-left-color: #007bff; }
+
+.kpi-number {
+    font-size: clamp(1.8rem, 3vw, 3rem);
+    font-weight: 700;
+    margin: 10px 0;
+}
+
+.kpi-label {
+    font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+    color: #666;
+    font-weight: 600;
+}
+
+/* ===============================
+BIENVENIDA
+=============================== */
+.welcome-banner {
+    background: linear-gradient(135deg, #457EB0 0%, #2c5a8a 100%);
+    color: white;
+    padding: clamp(18px, 2.5vw, 26px);
+    border-radius: 12px;
+    margin-bottom: 30px;
+}
+
+.welcome-banner h1 {
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.25;
+}
+
+/* Subtítulo */
+.welcome-banner .subtitle {
+    font-size: clamp(0.95rem, 1.1vw, 1.05rem);
+    margin-top: 8px;
+    font-weight: 500;
+    opacity: 0.95;
+}
+
+/* Fecha */
+.welcome-banner .date {
+    font-size: clamp(0.8rem, 1vw, 0.9rem);
+    margin-top: 4px;
+    opacity: 0.75;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -114,11 +158,11 @@ with st.sidebar:
     st.markdown("### 📊 Menú")
     
     menu_options = {
-        "🏠 Dashboard": "Dashboard.py",
-        "👥 Usuarios": "Usuarios.py",
-        "📋 Permisos": "Permisos.py",
-        "🚗 Flota": "Flota.py",
-        "📅 Calendario": "Calendario.py"
+        "Dashboard": "Dashboard.py",
+        "Usuarios": "Usuarios.py",
+        "Permisos": "Permisos.py",
+        "Flota": "Flota.py",
+        "Calendario": "Calendario.py"
     }
     
     for label, page in menu_options.items():
@@ -139,10 +183,14 @@ with st.sidebar:
 
 # Banner de bienvenida
 nombre_usuario = st.session_state.get("nombre", "Usuario")
+
 st.markdown(f"""
 <div class="welcome-banner">
     <h1>👋 Bienvenido, {nombre_usuario}</h1>
-    <p style='font-size: 1.2em; margin-top: 10px;'>Panel de Control Ejecutivo - {datetime.now().strftime('%d/%m/%Y')}</p>
+    <div class="subtitle">Panel de Resumen</div>
+    <div class="date">
+        {datetime.now().strftime('%A %d de %B de %Y')}
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -222,7 +270,7 @@ with col2:
 with col3:
     st.markdown(f"""
     <div class="kpi-card yellow">
-        <div class="kpi-label">⚠️ Por Vencer (30d)</div>
+        <div class="kpi-label">⚠️ Por Vencer</div>
         <div class="kpi-number">{por_vencer}</div>
     </div>
     """, unsafe_allow_html=True)
