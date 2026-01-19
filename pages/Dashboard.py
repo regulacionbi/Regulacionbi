@@ -7,6 +7,25 @@ from utils.supabase_client import get_supabase_client
 
 st.session_state.current_page = "pages/Dashboard.py"
 
+
+
+#------------FUNCION DE FORMATEO DE NÚMEROS CON COMAS------------
+def fmt(num):
+    """Formatea número con comas, maneja casos especiales"""
+    try:
+        if num is None:
+            return "0"
+        if pd.isna(num):
+            return "0"
+        # Convertir a entero si es float sin decimales
+        if isinstance(num, float) and num.is_integer():
+            num = int(num)
+        return f"{num:,}"
+    except (ValueError, TypeError, AttributeError):
+        # Si falla todo, devolver como string
+        return str(num)
+
+
 # ===============================
 # PROTECCIÓN DE PÁGINA
 # ===============================
@@ -38,7 +57,7 @@ st.markdown("""
 div[data-testid="stSidebarNav"] {
     display: none;
 }
-            
+
 /* ===============================
 TIPOGRAFÍA GLOBAL
 =============================== */
@@ -77,6 +96,7 @@ KPI CARDS
 .kpi-number {
     font-size: clamp(1.8rem, 3vw, 3rem);
     font-weight: 700;
+    color: #0A0A38;
     margin: 10px 0;
 }
 
@@ -127,36 +147,37 @@ BIENVENIDA
 # ===============================
 supabase = get_supabase_client()
 
+
 # ===============================
 # SIDEBAR
 # ===============================
 with st.sidebar:
     st.markdown("### 🏢 Filtros")
-    
+
     # Selector de Empresa
     try:
         filiales = supabase.table("Filial").select("id_cia, nombre").execute()
         empresas = {f["nombre"]: f["id_cia"] for f in filiales.data}
-        
+
         empresa_seleccionada = st.selectbox(
             "Seleccionar Empresa",
             options=["Todas"] + list(empresas.keys())
         )
-        
+
         if empresa_seleccionada != "Todas":
             id_empresa = empresas[empresa_seleccionada]
         else:
             id_empresa = None
-            
+
     except Exception as e:
         st.error(f"Error al cargar empresas: {e}")
         id_empresa = None
-    
+
     st.markdown("---")
-    
+
     # Menú de navegación
     st.markdown("### 📊 Menú")
-    
+
     menu_options = {
         "Dashboard": "Dashboard.py",
         "Usuarios": "Usuarios.py",
@@ -164,13 +185,13 @@ with st.sidebar:
         "Flota": "Flota.py",
         "Calendario": "Calendario.py"
     }
-    
+
     for label, page in menu_options.items():
         if st.button(label, use_container_width=True):
             st.switch_page(f"pages/{page}")
-    
+
     st.markdown("---")
-    
+
     # Botón de Logout
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         for key in list(st.session_state.keys()):
@@ -195,59 +216,100 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ===============================
-# OBTENER DATOS
+# OBTENER DATOS (SIMPLIFICADO)
 # ===============================
 
 try:
-    # Query para cumplimientos con filtro opcional de empresa
-    query = supabase.table("Cumplimientos").select("""
-        *,
-        Permisos!inner(subsidiaria, Filial!inner(nombre)),
-        Cat_Obl!inner(obligacion)
-    """)
+    # Obtener información del usuario
+    rol = st.session_state.get("role")
+    id_filial_usuario = st.session_state.get("id_filial")
+    id_costos_usuario = st.session_state.get("id_costos")
     
-    if id_empresa:
-        query = query.eq("Permisos.subsidiaria", id_empresa)
+    # 1. OBTENER TOTAL DEL CATÁLOGO DE OBLIGACIONES
+    cat_obl = supabase.table("Cat_Obl").select("id_obl").execute()
+    total_cat_obl = len(cat_obl.data)
     
-    cumplimientos = query.execute()
-    df = pd.DataFrame(cumplimientos.data)
+    # 2. OBTENER PERMISOS CON FILTROS SEGÚN ROL
+    query_permisos = supabase.table("Permisos").select("id_permisos, subsidiaria, ctro_costos")
     
-    # Calcular KPIs
-    total_obligaciones = len(df)
-    
-    # Calcular estados basados en fechas
-    hoy = datetime.now().date()
-    
-    def clasificar_estado(row):
-        if pd.isna(row.get('fecha_fin')):
-            return 'sin_fecha'
+    # Aplicar filtros según el rol del usuario
+    if rol == "admdr":
+        # ADMDR ve TODOS los permisos
+        permisos = query_permisos.execute()
         
-        fecha_fin = pd.to_datetime(row['fecha_fin']).date()
-        dias_restantes = (fecha_fin - hoy).days
-        
-        if dias_restantes < 0:
-            return 'vencido'
-        elif dias_restantes <= 30:
-            return 'por_vencer'
+    elif rol == "filial":
+        # FILIAL ve solo los permisos de SU filial
+        if id_filial_usuario and id_filial_usuario != "ALL":
+            st.info(f"🏭 **Rol:** FILIAL - Filtrado por filial: {id_filial_usuario}")
+            permisos = query_permisos.eq("subsidiaria", id_filial_usuario).execute()
         else:
-            return 'cumplido'
+            st.info("🏭 **Rol:** FILIAL - Sin filtro específico")
+            permisos = query_permisos.execute()
+            
+    elif rol in ("oficina", "gerencial"):
+        # OFICINA/GERENCIAL ve solo los permisos de SU centro de costos
+        if id_costos_usuario and id_costos_usuario != "ALL":
+            st.info(f"💼 **Rol:** {rol.upper()} - Filtrado por centro de costos: {id_costos_usuario}")
+            permisos = query_permisos.eq("ctro_costos", id_costos_usuario).execute()
+        else:
+            st.info(f"💼 **Rol:** {rol.upper()} - Sin filtro específico")
+            permisos = query_permisos.execute()
+            
+    else:
+        st.warning(f"❓ Rol no reconocido: {rol}")
+        permisos = query_permisos.execute()
     
-    df['estado'] = df.apply(clasificar_estado, axis=1)
+    df_permisos = pd.DataFrame(permisos.data)
     
-    cumplidas = len(df[df['estado'] == 'cumplido'])
-    por_vencer = len(df[df['estado'] == 'por_vencer'])
-    vencidas = len(df[df['estado'] == 'vencido'])
+    # 3. CALCULAR TOTAL DE OBLIGACIONES
+    if df_permisos.empty:
+        total_obligaciones = 0
+        st.warning("⚠️ No se encontraron permisos para este usuario/filtro")
+    else:
+        # Fórmula: Total Obligaciones = (Total en Cat_Obl) × (Permisos filtrados)
+        total_obligaciones = total_cat_obl * len(df_permisos)
+        
+    
+    # 4. INFORMACIÓN ADICIONAL PARA MOSTRAR (opcional)
+    cumplidas = por_vencer = vencidas = 0  # Por ahora, solo el total
+    df = pd.DataFrame()  # DataFrame vacío por ahora
+    
+    # 5. OBTENER NOMBRES DE EMPRESAS PARA ADMDR (si hay permisos)
+    if rol == "admdr" and not df_permisos.empty:
+        try:
+            # Agrupar permisos por subsidiaria
+            obligaciones_por_empresa = df_permisos.groupby('subsidiaria').size().reset_index(name='num_permisos')
+            
+            # Obtener nombres de las filiales
+            filiales_resp = supabase.table("Filial").select("id_cia, nombre").execute()
+            filiales_dict = {f['id_cia']: f['nombre'] for f in filiales_resp.data}
+            
+            # Mapear IDs a nombres
+            obligaciones_por_empresa['nombre_empresa'] = obligaciones_por_empresa['subsidiaria'].map(filiales_dict)
+            obligaciones_por_empresa['total_obligaciones'] = obligaciones_por_empresa['num_permisos'] * total_cat_obl
+            
+            # Guardar en session_state para usar después
+            st.session_state['obligaciones_por_empresa'] = obligaciones_por_empresa
+            
+        except Exception as e:
+            st.warning(f"No se pudo obtener información por empresa: {e}")
     
 except Exception as e:
-    st.error(f"Error al cargar datos: {e}")
-    total_obligaciones = cumplidas = por_vencer = vencidas = 0
+    st.error(f"❌ Error al calcular total de obligaciones: {str(e)}")
+    import traceback
+    with st.expander("📜 Ver detalles del error"):
+        st.code(traceback.format_exc())
+    
+    total_obligaciones = 0
+    total_cat_obl = 0
+    df_permisos = pd.DataFrame()
     df = pd.DataFrame()
 
 # ===============================
-# KPIs - SEMÁFORO
+# KPIs - SOLO TOTAL DE OBLIGACIONES
 # ===============================
 
-st.markdown("## 🚦 Indicadores de Cumplimiento")
+st.markdown("## 🚦 Total de Obligaciones")
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -255,103 +317,102 @@ with col1:
     st.markdown(f"""
     <div class="kpi-card blue">
         <div class="kpi-label">Total Obligaciones</div>
-        <div class="kpi-number">{total_obligaciones}</div>
+        <div class="kpi-number">{fmt(total_obligaciones)}</div>
+        <small>Catálogo: {fmt(total_cat_obl)} × Permisos: {fmt(len(df_permisos))}</small>
     </div>
     """, unsafe_allow_html=True)
 
+
+# Los otros 3 KPIs los dejamos vacíos por ahora
 with col2:
-    st.markdown(f"""
+    st.markdown("""
     <div class="kpi-card green">
         <div class="kpi-label">✅ Cumplidas</div>
-        <div class="kpi-number">{cumplidas}</div>
+        <div class="kpi-number">0</div>
+        <small>Por implementar</small>
     </div>
     """, unsafe_allow_html=True)
 
 with col3:
-    st.markdown(f"""
+    st.markdown("""
     <div class="kpi-card yellow">
         <div class="kpi-label">⚠️ Por Vencer</div>
-        <div class="kpi-number">{por_vencer}</div>
+        <div class="kpi-number">0</div>
+        <small>Por implementar</small>
     </div>
     """, unsafe_allow_html=True)
 
 with col4:
-    st.markdown(f"""
+    st.markdown("""
     <div class="kpi-card red">
         <div class="kpi-label">🚨 Vencidas</div>
-        <div class="kpi-number">{vencidas}</div>
+        <div class="kpi-number">0</div>
+        <small>Por implementar</small>
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("---")
 
 # ===============================
-# GRÁFICOS Y ANÁLISIS
+# INFORMACIÓN DETALLADA
 # ===============================
 
-col_left, col_right = st.columns([1.5, 1])
-
-with col_left:
-    st.markdown("### 📊 Distribución de Estados")
+if total_obligaciones > 0:
+    st.markdown(f"### ✅ Total calculado correctamente: **{fmt(total_obligaciones)}** obligaciones")
     
-    if not df.empty:
-        # Gráfico de barras
-        estados_count = df['estado'].value_counts()
+    # Para ADMDR: mostrar distribución por empresa
+    if rol == "admdr" and 'obligaciones_por_empresa' in st.session_state:
+        st.markdown("### 🏢 Distribución por Empresa")
         
-        st.bar_chart(estados_count)
+        obligaciones_por_empresa = st.session_state['obligaciones_por_empresa']
         
-        # Tabla detallada de próximos vencimientos
-        st.markdown("### ⏰ Próximos Vencimientos (30 días)")
+        col_a, col_b = st.columns([2, 1])
         
-        proximos = df[df['estado'] == 'por_vencer'].copy()
-        
-        if not proximos.empty:
-            proximos['dias_restantes'] = proximos.apply(
-                lambda row: (pd.to_datetime(row['fecha_fin']).date() - hoy).days,
-                axis=1
-            )
-            proximos = proximos.sort_values('dias_restantes')
-            
+        with col_a:
             st.dataframe(
-                proximos[['obligacion', 'fecha_fin', 'dias_restantes']].head(10),
+                obligaciones_por_empresa[['nombre_empresa', 'total_obligaciones', 'num_permisos']],
                 use_container_width=True,
-                hide_index=True
+                hide_index=True,
+                column_config={
+                    'nombre_empresa': 'Empresa',
+                    'total_obligaciones': 'Total Obligaciones',
+                    'num_permisos': 'N° Permisos'
+                }
             )
-        else:
-            st.success("✅ No hay vencimientos próximos")
-    else:
-        st.info("📭 No hay datos para mostrar")
-
-with col_right:
-    st.markdown("### 🏢 Cumplimiento por Empresa")
-    
-    if not df.empty:
-        # Agrupar por empresa
-        por_empresa = df.groupby('estado').size().to_frame('count')
-        st.dataframe(por_empresa, use_container_width=True)
         
-        # Porcentaje de cumplimiento
-        if total_obligaciones > 0:
-            porcentaje_cumplimiento = (cumplidas / total_obligaciones) * 100
-            
-            st.markdown("### 📈 Índice de Cumplimiento")
-            st.progress(porcentaje_cumplimiento / 100)
-            st.markdown(f"**{porcentaje_cumplimiento:.1f}%** de obligaciones cumplidas")
+        with col_b:
+            st.metric("Total Empresas", len(obligaciones_por_empresa))
+            st.metric("Total Permisos", obligaciones_por_empresa['num_permisos'].sum())
+    
+    # Para otros roles: mostrar su información específica
+    elif rol != "admdr":
+        st.markdown("### 👤 Información del Usuario")
+        col_x, col_y = st.columns(2)
+        
+        with col_x:
+            st.metric("Catálogo de Obligaciones", total_cat_obl)
+        
+        with col_y:
+            st.metric("Permisos Asignados", len(df_permisos) if not df_permisos.empty else 0)
+        
+        if id_filial_usuario and id_filial_usuario != "ALL":
+            try:
+                # Intentar obtener nombre de la filial
+                filial_resp = supabase.table("Filial")\
+                    .select("nombre")\
+                    .eq("id_cia", id_filial_usuario)\
+                    .execute()
+                
+                if filial_resp.data:
+                    nombre_filial = filial_resp.data[0]['nombre']
+                    st.info(f"**Empresa asignada:** {nombre_filial}")
+            except:
+                pass
 
-# ===============================
-# ALERTAS CRÍTICAS
-# ===============================
+else:
+    st.warning("⚠️ **No se pudieron calcular las obligaciones**")
+    
+    # Botón para forzar recálculo
+    if st.button("🔄 Intentar nuevamente"):
+        st.rerun()
 
-if vencidas > 0:
-    st.markdown("---")
-    st.markdown("### 🚨 ALERTAS CRÍTICAS - Obligaciones Vencidas")
-    
-    vencidas_df = df[df['estado'] == 'vencido']
-    
-    st.error(f"Hay {vencidas} obligaciones vencidas que requieren atención inmediata")
-    
-    st.dataframe(
-        vencidas_df[['obligacion', 'fecha_fin']].head(10),
-        use_container_width=True,
-        hide_index=True
-    )
