@@ -105,6 +105,12 @@ KPI CARDS
     color: #666;
     font-weight: 600;
 }
+            
+.kpi-card small {
+    color: #4D4D8A;
+    font-weight: 500;
+    font-size: clamp(0.75rem, 1vw, 0.9rem);
+}            
 
 /* ===============================
 BIENVENIDA
@@ -261,7 +267,9 @@ try:
     
     df_permisos = pd.DataFrame(permisos.data)
     
-    # 3. CALCULAR TOTAL DE OBLIGACIONES
+    #------------------------ 
+    # KPI: TOTAL DE OBLIGACIONES
+    #------------------------
     if df_permisos.empty:
         total_obligaciones = 0
         st.warning("⚠️ No se encontraron permisos para este usuario/filtro")
@@ -305,8 +313,66 @@ except Exception as e:
     df_permisos = pd.DataFrame()
     df = pd.DataFrame()
 
+
+ # ===============================
+# KPI: CUMPLIDAS (SEGÚN ROL)
 # ===============================
-# KPIs - SOLO TOTAL DE OBLIGACIONES
+
+estatus_cumplidas = ["autorizado", "vigente", "excenta"]
+
+# Query base a Cumplimientos con joins
+query_cumplimientos = supabase.table("Cumplimientos").select("""
+    id_cumpl,
+    estatus,
+    id_permiso,
+    Permisos!inner(
+        id_permisos,
+        subsidiaria,
+        ctro_costos,
+        Filial!inner(id_cia, nombre),
+        Ctro_Costos!inner(id_costos, nombre)
+    )
+""").in_("estatus", estatus_cumplidas)
+
+# Aplicar los MISMOS filtros por rol
+if rol == "admdr":
+    cumplimientos_resp = query_cumplimientos.execute()
+
+elif rol == "filial":
+    if id_filial_usuario and id_filial_usuario != "ALL":
+        cumplimientos_resp = query_cumplimientos.eq(
+            "Permisos.subsidiaria", id_filial_usuario
+        ).execute()
+    else:
+        cumplimientos_resp = query_cumplimientos.execute()
+
+elif rol in ("oficina", "gerencial"):
+    if id_costos_usuario and id_costos_usuario != "ALL":
+        cumplimientos_resp = query_cumplimientos.eq(
+            "Permisos.ctro_costos", id_costos_usuario
+        ).execute()
+    else:
+        cumplimientos_resp = query_cumplimientos.execute()
+
+else:
+    cumplimientos_resp = query_cumplimientos.execute()
+
+df_cumplidas = pd.DataFrame(cumplimientos_resp.data)
+
+if df_cumplidas.empty:
+    cumplidas = 0
+    porcentaje_cumplidas = 0
+
+else:
+    cumplidas = len(df_cumplidas)
+
+    if total_obligaciones > 0:
+        porcentaje_cumplidas = (cumplidas / total_obligaciones) * 100
+    else:
+        porcentaje_cumplidas = 0
+
+# ===============================
+# KPIs - Cards
 # ===============================
 
 st.markdown("## 🚦 Total de Obligaciones")
@@ -323,15 +389,17 @@ with col1:
     """, unsafe_allow_html=True)
 
 
-# Los otros 3 KPIs los dejamos vacíos por ahora
+
 with col2:
-    st.markdown("""
+    st.markdown(f"""
     <div class="kpi-card green">
         <div class="kpi-label">✅ Cumplidas</div>
-        <div class="kpi-number">0</div>
-        <small>Por implementar</small>
+        <div class="kpi-number">{fmt(cumplidas)}</div>
+        <small>{porcentaje_cumplidas:.1f}% del total</small>
     </div>
     """, unsafe_allow_html=True)
+
+# Los otros 2 KPIs los dejamos vacíos por ahora
 
 with col3:
     st.markdown("""
